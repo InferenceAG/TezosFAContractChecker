@@ -2,3 +2,6 @@ contracts/command.md
 scripts/accounts_*
 node_modules
 env.js
+*ligoTest*
+*archTest*
+

@@ -3,6 +3,7 @@ import {
     TransactionOperation,
     TezosToolkit,
     Contract,
+    Operation,
   } from "@taquito/taquito";
   
  
@@ -10,15 +11,18 @@ import { BigNumber } from "bignumber.js";
 
 import { confirmOperation } from "../../scripts/confirmation";
 
-import { UpdateOperator, Transfer, TransferDestination } from "../types/FA2";
+import { UpdateOperator, Transfer, TransferDestination, BalanceResponse } from "../types/FA2";
 
 import { FA2NFTStorage } from "../types/FA2nft-specific";
 import { FA2SingleStorage } from "../types/FA2single-specific";
 import { FA2MultiStorage } from "../types/FA2multi-specific";
+import { FA2balaceOfCallBackStorage } from "../types/FA2balanceOfCallback";
 
 import { FA2singlespecific } from "./fa2single-specific";
 import { FA2NFTspecific } from "./fa2nft-specific";
 import { FA2multispecific } from "./fa2multi-specific";
+
+
   
   export class FA2 {
     tezos: TezosToolkit;
@@ -26,15 +30,17 @@ import { FA2multispecific } from "./fa2multi-specific";
     fa2type: string;
     storage: unknown;
     fa2specifics: unknown;
+    fa2balanceOfCallbackContract: string;
   
-    constructor(contract: Contract, tezos: TezosToolkit, fa2type: string, fa2specifics: unknown) {
+    constructor(contract: Contract, tezos: TezosToolkit, fa2type: string, fa2specifics: unknown, fa2balanceOfCallbackContract: string) {
       this.contract = contract;
       this.tezos = tezos;
       this.fa2type = fa2type;
       this.fa2specifics = fa2specifics;
+      this.fa2balanceOfCallbackContract = fa2balanceOfCallbackContract;
     }
   
-    static async init(fa2Address: string, tezos: TezosToolkit, fa2type: string): Promise<FA2> {
+    static async init(fa2Address: string, tezos: TezosToolkit, fa2type: string, fa2balanceOfCallbackContract: string): Promise<FA2> {
       var fa2specifics: unknown;
       var storage: unknown;
       const contract: Contract = await tezos.contract.at(fa2Address);
@@ -54,7 +60,7 @@ import { FA2multispecific } from "./fa2multi-specific";
           break;
       }
 
-      return new FA2(contract, tezos, fa2type, fa2specifics);
+      return new FA2(contract, tezos, fa2type, fa2specifics, fa2balanceOfCallbackContract);
     }
 
     async updateStorage(maps = {}): Promise<void> {  
@@ -139,6 +145,7 @@ import { FA2multispecific } from "./fa2multi-specific";
   
       return operation;
     }  
+
     async removeOperator(owner, operator, tokenId): Promise<TransactionOperation> {
       const operation: TransactionOperation = await this.contract.methods
         .update_operators([{
@@ -154,5 +161,61 @@ import { FA2multispecific } from "./fa2multi-specific";
   
       return operation;
     }  
-   
+
+    async balanceOf_runview_single(owner, tokenId): Promise<BalanceResponse[]> {
+      const response: BalanceResponse[] = await this.contract.views.balance_of([{
+        owner: owner,
+        token_id: tokenId,
+      }]).read();      
+  
+      return response;
+    } 
+
+    async balanceOf_runview(requests): Promise<BalanceResponse[]> {
+      const response: BalanceResponse[] = await this.contract.views.balance_of(requests).read();
+  
+      return response;
+    } 
+
+  
+    async balanceOf_onchain_single(owner, tokenId): Promise<TransactionOperation> {
+      const operation: TransactionOperation = await this.contract.methodsObject
+        .balance_of({
+          requests: [{
+            owner: owner,
+            token_id: tokenId,
+          }],
+          callback: this.fa2balanceOfCallbackContract,
+        })
+        .send();
+  
+      await confirmOperation(this.tezos, operation.hash);
+
+      
+  
+      return operation;
+    } 
+
+    async balanceOf_onchain(requests): Promise<TransactionOperation> {
+      const operation: TransactionOperation = await this.contract.methodsObject
+        .balance_of({
+          requests: requests,
+          callback: this.fa2balanceOfCallbackContract,
+        })
+        .send();
+  
+      await confirmOperation(this.tezos, operation.hash);
+  
+      return operation;
+    } 
+
+    /* TODO: Does not work. It seems the properties for BalanceResponse are not correctly read out/assigned.
+    async getBalanceOnChainResult(): Promise<BalanceResponse[]> {
+      const callbackContract: Contract = await this.tezos.contract.at(this.fa2balanceOfCallbackContract);
+      const myStorage: FA2balaceOfCallBackStorage = await callbackContract.storage() as FA2balaceOfCallBackStorage;
+      const balanceResponse :BalanceResponse[] = await myStorage.get(this.contract.address.toString()) as BalanceResponse[];
+      return balanceResponse;
+    }
+    */
+
   }

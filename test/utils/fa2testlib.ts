@@ -17,10 +17,7 @@ var alice: SBAccount = accounts.alice;
 var bob: SBAccount = accounts.bob;
 var charlie: SBAccount = accounts.charlie;
 var baseToken: number = env.fa2initstate.admin.tokenId[0];
-var baseTokenAmount: number = env.fa2initstate.admin.amount[0];
-var nonExistantToken: number = env.fa2initstate.nonExistantToken;
 const fa2type: string = env.fa2type;
-
 
 export class FA2testlib {
     util: Utils;
@@ -29,7 +26,7 @@ export class FA2testlib {
     constructor(contract: FA2, util: Utils) {
         this.contract = contract;
         this.util = util;
-      }
+    };
     
     async initState(): Promise<unknown> {
         
@@ -210,176 +207,5 @@ export class FA2testlib {
                 break;
         }   
     };
-
-    async transferSelfAmount1(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.transferSingle(admin.pkh, admin.pkh, new BigNumber(baseToken), new BigNumber(1));
-
-        expect(await this.contract.fa2specifics.getBalance(this.contract, admin.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(baseTokenAmount);
-    };
-    
-    async transferSelfAmount0(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.transferSingle(admin.pkh, admin.pkh, new BigNumber(baseToken), new BigNumber(0));
-
-        expect(await this.contract.fa2specifics.getBalance(this.contract, admin.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(baseTokenAmount);
-    };
-
-    async transferSelfAmount1NonExistantToken(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await rejects(this.contract.transferSingle(admin.pkh, admin.pkh, new BigNumber(nonExistantToken), new BigNumber(1)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_TOKEN_UNDEFINED);
-
-            return true;
-        });
-    };
-
-    async transferSelfMoreThanAvailable(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await rejects(this.contract.transferSingle(admin.pkh, admin.pkh, new BigNumber(baseToken), new BigNumber(baseTokenAmount+1)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_INSUFFICIENT_BALANCE);
-
-            return true;
-        });
-    };
-    
-    async transferAdminToAliceAmount0(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.transferSingle(admin.pkh, alice.pkh, new BigNumber(baseToken), new BigNumber(0));
-
-        expect(await this.contract.fa2specifics.getBalance(this.contract, admin.pkh,new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(baseTokenAmount));
-        expect(await this.contract.fa2specifics.getBalance(this.contract, alice.pkh,new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(0));
-    };
-
-    async transferAdminToAliceAmount1(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.transferSingle(admin.pkh, alice.pkh, new BigNumber(baseToken), new BigNumber(1));
-    
-        expect(await this.contract.fa2specifics.getBalance(this.contract, admin.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(baseTokenAmount-1));
-        expect(await this.contract.fa2specifics.getBalance(this.contract, alice.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(1));
-    };
-
-    async transferAdminToAliceAmountTooHigh(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-    
-        await rejects(this.contract.transferSingle(admin.pkh, alice.pkh, new BigNumber(baseToken), new BigNumber(baseTokenAmount+1)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_INSUFFICIENT_BALANCE);
-
-            return true;
-        });
-    };
-
-    async nftBatchTransferAdmin(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.transfer([{from_: admin.pkh, txs: [
-            { to_: alice.pkh, token_id: new BigNumber(baseToken), amount: new BigNumber(1) },
-            { to_: bob.pkh, token_id: new BigNumber(baseToken), amount: new BigNumber(10) },
-            { to_: charlie.pkh, token_id: new BigNumber(baseToken), amount: new BigNumber(1) }
-        ]}]);
-
-        expect(await this.contract.fa2specifics.getBalance(this.contract, admin.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(878));
-        expect(await this.contract.fa2specifics.getBalance(this.contract, alice.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(111));
-        expect(await this.contract.fa2specifics.getBalance(this.contract, bob.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(10));
-        expect(await this.contract.fa2specifics.getBalance(this.contract, charlie.pkh, new BigNumber(baseToken))).to.be.bignumber.equal(new BigNumber(1));    
-    };
- n
-
-    // Operator functions
-    async operatorAdminRemovesAlice(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.removeOperator(admin.pkh, alice.pkh, new BigNumber(baseToken));
-        
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, admin.pkh, alice.pkh, new BigNumber(baseToken))).equal(false);
-    };
-
-    async operatorAdminAddsAlice(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.addOperator(admin.pkh, alice.pkh, new BigNumber(baseToken));
-        
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, admin.pkh, alice.pkh, new BigNumber(baseToken))).equal(true);
-    };
-
-    async operatorAliceAddsAdmin(): Promise<unknown> {
-        await this.util.setProvider(alice.sk);
-        await this.contract.addOperator(alice.pkh, admin.pkh, new BigNumber(baseToken));
-        
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, alice.pkh, admin.pkh, new BigNumber(baseToken))).equal(true);
-    };
-
-    async operatorBatchAdmin(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.updateOperators([
-            {add_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}},
-            {remove_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}}, 
-            {add_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}}]);
-
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, admin.pkh, alice.pkh, new BigNumber(baseToken))).equal(true);
-    };
-
-    async operatorBatchAdmin2(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await this.contract.updateOperators([
-            {remove_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}},
-            {add_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}}, 
-            {remove_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}}]);
-
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, admin.pkh, alice.pkh, new BigNumber(baseToken))).equal(false);
-    };
-
-    async operatorAdminAddsAdminForAlice(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await rejects(this.contract.addOperator(alice.pkh, admin.pkh, new BigNumber(baseToken)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-            return true;
-        });        
-    };
-
-    async operatorAdminRemovesAdminForAlice(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-        await rejects(this.contract.removeOperator(alice.pkh, admin.pkh, new BigNumber(baseToken)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-            return true;
-        });     
-    };
-
-    async operatorBatch(): Promise<unknown> {
-        await this.util.setProvider(admin.sk);
-
-        await this.contract.addOperator(admin.pkh, alice.pkh, new BigNumber(baseToken))
-        expect(await this.contract.fa2specifics.checkOperator(this.contract, admin.pkh, alice.pkh, new BigNumber(baseToken))).equal(true);
-
-        await this.util.setProvider(alice.sk);
-        await rejects(this.contract.addOperator(admin.pkh, charlie.pkh, new BigNumber(baseToken)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-            return true;
-        });   
-        
-        await rejects(this.contract.removeOperator(admin.pkh, alice.pkh, new BigNumber(baseToken)), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-            return true;
-        });
-
-        await rejects(this.contract.updateOperators([{add_operator: {owner: alice.pkh, operator: admin.pkh, token_id: new BigNumber(baseToken)}},
-                                                   {add_operator: {owner: admin.pkh, operator: charlie.pkh, token_id: new BigNumber(baseToken)}}]), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-            return true;
-        });
-
-        await rejects(this.contract.updateOperators([{add_operator: {owner: alice.pkh, operator: admin.pkh, token_id: new BigNumber(baseToken)}},
-                                                   {remove_operator: {owner: alice.pkh, operator: admin.pkh, token_id: new BigNumber(baseToken)}},
-                                                   {remove_operator: {owner: admin.pkh, operator: alice.pkh, token_id: new BigNumber(baseToken)}}]), (err, Error) => {
-            expect(err.message).to.equal(FA2Errors.FA2_NOT_OWNER);
-
-        return true;
-        });   
-    };
-
-
-  }
-
+};
   

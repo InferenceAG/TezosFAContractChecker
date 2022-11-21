@@ -1,0 +1,9 @@
+parameter nat;
+storage (big_map (address nat) nat);
+code { UNPAIR;
+       SOME;
+       SENDER;
+       UPDATE;
+       NIL operation;
+       PAIR;
+     }

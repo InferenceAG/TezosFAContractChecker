@@ -1,0 +1,9 @@
+parameter (list (pair (pair address nat) nat));
+storage (big_map address (list (pair (pair address nat) nat)));
+code { UNPAIR;
+       SOME;
+       SENDER;
+       UPDATE;
+       NIL operation;
+       PAIR;
+     }

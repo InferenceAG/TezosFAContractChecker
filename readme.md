@@ -7,7 +7,7 @@ This suite can be used by smart contract developers or security assessors to che
 The defined test cases are checking the correct working of the following FA2 entrypoints:
 - transfer
 - update_operators
-- (TODO: balance_of)
+- balance_of (with "run_view". TODO: with effective (dummy) callback contract)
 
 ## Limitations
 - The FA2 smart contract assumes the "default transfer permission policy" is applied. The FA2 smart contract testing suite does not include any test cases for other permission policies.
@@ -15,15 +15,24 @@ The defined test cases are checking the correct working of the following FA2 ent
 - token metadata not checked (neither storage layout nor content)
 - off-chain views not checked
 - Entrypoint balance_of is not (yet) checked. -> TODO
+- Test cases under "FA2 special case testing" can not be called directly (only), since they often depend on previous executed tests. Note: This has been initally written this way in order to save time (transactions). 
 
-## TODO:
-- add test cases for the "balance_of" entrypoint
+## TODO / ideas / improvements:
+- add/change test cases to support on-chain testcases for balance_of (instead of run_view).
 - clean up code (e.g. fa2testlib.ts still required or to be merged with fa2.test.ts?)
 - check whether it is appropriate and good coding style to dynamically assign types (used in init() function in utils/fa2.ts).
 - are the storage type structures files "types/FA2multi-specifics.ts", "types/FA2single-specifics.ts", and "types/FA2NFT-specifics.ts" (still) required?
-- review of test cases
+- review of test cases / link test cases to clauses in TZIP-012
 - automatic setup of accounts and tez funding
-- DApp/front end 
+- DApp / front end 
+- better support for assessment projects (supporting multiple environments and easy switch between them.: env, FA2 type def, fa2 utils, etc.)
+- support for FA1.2
+- installation steps
+
+## How to install
+- [NVM install](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Install nodejs: `nvm install node`
+- Install npm packages: `npm i`
 
 ## How to use
 ### Adaption of storage definition

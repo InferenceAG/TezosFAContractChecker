@@ -3,6 +3,7 @@ import { MichelsonMap, MichelsonMapKey, OptionTokenSchema, PairTokenSchema } fro
 import { BigNumber } from "bignumber.js";
 
 export type FA2SingleStorage = {
+  /*
   admin: {
     admin: string;
     paused: boolean;
@@ -15,4 +16,5 @@ export type FA2SingleStorage = {
     total_supply: MichelsonMap<MichelsonMapKey, unknown>;
   };
   metadata: MichelsonMap<MichelsonMapKey, unknown>;
+  */
 };
